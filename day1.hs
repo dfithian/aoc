@@ -15,7 +15,8 @@ main = do
   let bad = headMay $ do
         x <- numbers
         y <- numbers
-        case (x == y, x + y) of
-          (False, 2020) -> [x * y]
+        z <- numbers
+        case (x == y || y == z || x == z, x + y + z) of
+          (False, 2020) -> [x * y * z]
           _ -> []
   putStrLn $ tshow bad

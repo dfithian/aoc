@@ -7,6 +7,7 @@
 import ClassyPrelude
 import Prelude (read)
 import Control.Monad (fail)
+import Data.List ((!!))
 import qualified Data.Attoparsec.ByteString as Atto
 import qualified Data.ByteString.Char8 as C8
 
@@ -46,8 +47,11 @@ policyAndPasswordParser = PolicyAndPassword <$> policyParser <*> (Atto.skipWhile
 
 isValid :: PolicyAndPassword -> Bool
 isValid (PolicyAndPassword (PasswordPolicy lo hi c) (Password p)) =
-  let n = length . filter ((==) c) $ p
-  in n >= lo && n <= hi
+  let passwordLen = length p
+  in case (lo <= passwordLen && hi <= passwordLen) of
+    False -> False
+    True -> ( (p !! (lo - 1) == c) && not (p !! (hi - 1) == c)
+              || not (p !! (lo - 1) == c) && (p !! (hi - 1) == c) )
 
 main :: IO ()
 main = do

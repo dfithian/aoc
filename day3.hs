@@ -39,10 +39,18 @@ getNextAtom (slopeX, slopeY) input@(atoms, bounds, (x, y)) = (, newInput) <$> at
   where
     newInput = (atoms, bounds, (x + slopeX, y + slopeY))
 
+slopes :: [(Int, Int)]
+slopes = [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]
+
 main :: IO ()
 main = do
   treeMap <- either fail pure . buildMap . lines . unpack
     =<< readFileUtf8 "day3.txt"
-  let atomsInPath = unfoldr (getNextAtom (1, 3)) (treeMap, (length treeMap, fromMaybe (error "Empty tree map") . headMay $ length <$> treeMap), (0, 0))
-      numTreesInPath = length $ filter ((==) Tree) atomsInPath
-  putStrLn $ "Got " <> tshow (length atomsInPath) <> " total cells, with " <> tshow numTreesInPath <> " trees"
+  -- let atomsInPath = unfoldr (getNextAtom (1, 3)) (treeMap, (length treeMap, fromMaybe (error "Empty tree map") . headMay $ length <$> treeMap), (0, 0))
+  --     numTreesInPath = length $ filter ((==) Tree) atomsInPath
+  -- putStrLn $ "Got " <> tshow (length atomsInPath) <> " total cells, with " <> tshow numTreesInPath <> " trees"
+  let atomsInPath = flip map slopes $ \ slope ->
+        unfoldr (getNextAtom slope) (treeMap, (length treeMap, fromMaybe (error "Empty tree map") . headMay $ length <$> treeMap), (0, 0))
+      numTreesInEachPath = length . filter ((==) Tree) <$> atomsInPath
+      mult = product numTreesInEachPath
+  putStrLn $ "Trees in each path: " <> tshow numTreesInEachPath <> ", product: " <> tshow mult
