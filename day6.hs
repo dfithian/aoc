@@ -12,11 +12,5 @@ import Data.Text (replace, splitOn)
 
 main :: IO ()
 main = do
-  answers <- map (words . unpack . replace "\n" " ") . splitOn "\n\n"
-    <$> readFileUtf8 "day6.txt"
-  let f next = \ case
-        Nothing -> Just $ setFromList next
-        Just acc -> Just $ intersect (setFromList next) acc
-      uniqueYesCount = map (length . setToList . asSet . fromMaybe mempty . foldr f Nothing) answers
-  putStrLn $ "Got unique yes counts: \n" <> intercalate "\n" (tshow <$> uniqueYesCount)
-  putStrLn $ "Sum: " <> tshow (sum uniqueYesCount)
+  putStrLn . tshow . sum . map (length . setToList . asSet . fromMaybe mempty . foldr (\ next -> Just . maybe (setFromList next) (intersect (setFromList next))) Nothing . words . unpack . replace "\n" " ") . splitOn "\n\n"
+    =<< readFileUtf8 "day6.txt"
