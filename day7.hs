@@ -10,8 +10,6 @@
 
 import ClassyPrelude
 import Data.Text (splitOn)
-import qualified Data.Attoparsec.ByteString as Atto
-import qualified Data.ByteString.Char8 as C8
 
 newtype BagType = BagType { unBagType :: Text }
   deriving (Eq, Ord, Show)
