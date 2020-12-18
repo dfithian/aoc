@@ -53,11 +53,12 @@ findMatchingParen str = do
   inner 1 str
 
 reverseStr :: String -> String
-reverseStr = \ case
-  [] -> []
-  '(':xs -> reverseStr xs <> ")"
-  ')':xs -> reverseStr xs <> "("
-  x:xs -> reverseStr xs <> [x]
+reverseStr = foldr flipParen mempty . reverse
+  where
+    flipParen next acc = case next of
+      ')' -> '(':acc
+      '(' -> ')':acc
+      _ -> next:acc
 
 parseExpression :: String -> IO Expression
 parseExpression = \ case
