@@ -53,9 +53,9 @@ findMatchingParen str = do
   inner 1 str
 
 reverseStr :: String -> String
-reverseStr = foldr flipParen mempty . reverse
+reverseStr = foldl' flipParen mempty
   where
-    flipParen next acc = case next of
+    flipParen acc next = case next of
       ')' -> '(':acc
       '(' -> ')':acc
       _ -> next:acc
