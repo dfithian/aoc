@@ -151,9 +151,10 @@ removeImageBorders = foldr (\ next acc -> removeTileRowBorder next <> acc) mempt
     removeTileRowBorder = foldr (\ next acc -> zipWith (<>) (removeTileBorder next) acc) (replicate tileSize [])
     removeTileBorder (Tile i tile) = map (drop 1 . dropEnd 1) . drop 1 . dropEnd 1 $ tile
 
-seaMonsterHeight, seaMonsterWidth :: Int
+seaMonsterHeight, seaMonsterWidth, numSeaMonsterChars :: Int
 seaMonsterHeight = 3
 seaMonsterWidth = 20
+numSeaMonsterChars = length $ filter ((==) '#') seaMonster
 
 seaMonster :: [Char]
 seaMonster = mconcat
@@ -162,17 +163,11 @@ seaMonster = mconcat
   , " #  #  #  #  #  #   "
   ]
 
-numSeaMonsterChars :: Int
-numSeaMonsterChars = length $ filter ((==) '#') seaMonster
-
-intersectImagesAt :: [[Char]] -> (Int, Int) -> [(Char, Char)]
-intersectImagesAt under (x, y) =
+overlaysSeaMonster :: [[Char]] -> (Int, Int) -> Bool
+overlaysSeaMonster under (x, y) =
   let sliceUnder = concatMap (take seaMonsterWidth . drop y) . take seaMonsterHeight . drop x $ under
-  in zip sliceUnder seaMonster
-
-hasSeaMonster :: [(Char, Char)] -> Bool
-hasSeaMonster zipped =
-  let isSeaMonsterChar charUnder charMonster = if charMonster == ' ' then True else charMonster == charUnder
+      zipped = zip sliceUnder seaMonster
+      isSeaMonsterChar charUnder charMonster = if charMonster == ' ' then True else charMonster == charUnder
   in length zipped == seaMonsterHeight * seaMonsterWidth && all (uncurry isSeaMonsterChar) zipped
 
 main :: IO ()
@@ -182,7 +177,7 @@ main = do
   image <- removeImageBorders <$> iterateImage topLeft remaining
   let imageLen = length image - 1
       numPoundChars = length . filter ((==) '#') . mconcat $ image
+      coords = [ (x, y) | x <- [0..imageLen], y <- [0..imageLen] ]
   for_ (getChoices image) $ \ choice -> do
-    let allSeaMonsters = sum . flip map [ (x, y) | x <- [0..imageLen], y <- [0..imageLen] ] $ \ (x, y) ->
-          if hasSeaMonster (intersectImagesAt choice (x, y)) then numSeaMonsterChars else 0
-    putStrLn . tshow $ numPoundChars - allSeaMonsters
+    let numChars = (*) numSeaMonsterChars . length . filter (overlaysSeaMonster choice) $ coords
+    if numChars == 0 then pure () else putStrLn $ tshow $ numPoundChars - numChars
