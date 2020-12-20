@@ -18,19 +18,14 @@ import Data.List ((!!))
 import qualified Data.Attoparsec.ByteString as Atto
 import qualified Data.ByteString.Char8 as C8
 
-data Tile = Tile Int [[Char]]
+data Tile = Tile
+  { tileId :: Int
+  , tileData :: [[Char]]
+  }
   deriving (Eq, Ord, Show)
 
 data Side = SideTop | SideBottom | SideLeft | SideRight
   deriving (Eq, Ord, Show, Enum, Bounded)
-
-printTile :: Tile -> IO ()
-printTile (Tile i xss) = do
-  putStrLn $ tshow i
-  traverse_ (putStrLn . pack) xss
-
-tileId :: Tile -> Int
-tileId (Tile i _) = i
 
 isDigit :: Word8 -> Bool
 isDigit w = w >= 48 && w <= 57
@@ -57,9 +52,6 @@ tileParser = Tile <$> idParser <*> Atto.sepBy1 inner newline
 tilesParser :: Atto.Parser [Tile]
 tilesParser = Atto.sepBy1 tileParser (newline <* newline)
 
-tileSize :: Int
-tileSize = 10
-
 otherSide :: Side -> Side
 otherSide = \ case
   SideTop -> SideBottom
@@ -70,9 +62,9 @@ otherSide = \ case
 getBorder :: Tile -> Side -> [Char]
 getBorder (Tile _ tile) = \ case
   SideTop -> tile !! 0
-  SideBottom -> tile !! (tileSize - 1)
+  SideBottom -> tile !! (length tile - 1)
   SideLeft -> map (!! 0) tile
-  SideRight -> map (!! (tileSize - 1)) tile
+  SideRight -> map (!! (length tile - 1)) tile
 
 flipTile :: [[Char]] -> [[Char]]
 flipTile tile = reverse <$> tile
@@ -93,7 +85,7 @@ getChoices tile = ordNub $ do
   [x, flipTile x]
 
 tileMatchesBorder :: [Char] -> Side -> Tile -> Maybe Tile
-tileMatchesBorder border side tile@(Tile i inner) =
+tileMatchesBorder border side (Tile i inner) =
   let f choice = if getBorder choice side == border then Just choice else Nothing
   in foldr (\ next acc -> acc <|> f next) Nothing $ Tile i <$> getChoices inner
 
@@ -105,39 +97,30 @@ sideForTile tiles tile side =
         Just t -> filter (not . (==) (tileId t) . tileId) tiles
   in (output, remaining)
 
-isTopLeft :: [Tile] -> Tile -> Bool
-isTopLeft tiles tile = and
-  [ isJust . fst . sideForTile tiles tile $ SideBottom
-  , isJust . fst . sideForTile tiles tile $ SideRight
-  , isNothing . fst . sideForTile tiles tile $ SideTop
-  , isNothing . fst . sideForTile tiles tile $ SideLeft
-  ]
-
 findTopLeft :: [Tile] -> Maybe (Tile, [Tile])
 findTopLeft tiles = headMay . catMaybes . flip map tiles $ \ tile ->
   let remaining = filter (not . (==) (tileId tile) . tileId) tiles
-  in if isTopLeft remaining tile then Just (tile, remaining) else Nothing
+      isTopLeft tile = and
+        [ isJust . fst . sideForTile remaining tile $ SideBottom
+        , isJust . fst . sideForTile remaining tile $ SideRight
+        , isNothing . fst . sideForTile remaining tile $ SideTop
+        , isNothing . fst . sideForTile remaining tile $ SideLeft
+        ]
+  in if isTopLeft tile then Just (tile, remaining) else Nothing
 
-iterateRow :: Tile -> [Tile] -> ([Tile], [Tile])
-iterateRow tile tiles = case sideForTile tiles tile SideRight of
+iterateRow :: Tile -> Side -> [Tile] -> ([Tile], [Tile])
+iterateRow tile side tiles = case sideForTile tiles tile side of
   (Nothing, _) -> ([tile], tiles)
   (Just this, remaining) ->
-    let (right, newRemaining) = iterateRow this remaining
+    let (right, newRemaining) = iterateRow this side remaining
     in (tile:right, newRemaining)
-
-iterateCol :: Tile -> [Tile] -> ([Tile], [Tile])
-iterateCol tile tiles = case sideForTile tiles tile SideBottom of
-  (Nothing, _) -> ([tile], tiles)
-  (Just this, remaining) ->
-    let (bottom, newRemaining) = iterateCol this remaining
-    in (tile:bottom, newRemaining)
 
 iterateImage :: Tile -> [Tile] -> IO [[Tile]]
 iterateImage tile = \ case
   [] -> pure [[tile]]
   remaining -> do
-    let (top, afterTop) = iterateRow tile remaining
-        (left, afterLeft) = iterateCol tile afterTop
+    let (top, afterTop) = iterateRow tile SideRight remaining
+        (left, afterLeft) = iterateRow tile SideBottom afterTop
     inner <- case headMay $ drop 1 top of
       Nothing -> pure []
       Just oneRight -> case sideForTile afterLeft oneRight SideBottom of
@@ -148,8 +131,8 @@ iterateImage tile = \ case
 removeImageBorders :: [[Tile]] -> [[Char]]
 removeImageBorders = foldr (\ next acc -> removeTileRowBorder next <> acc) mempty
   where
-    removeTileRowBorder = foldr (\ next acc -> zipWith (<>) (removeTileBorder next) acc) (replicate tileSize [])
-    removeTileBorder (Tile i tile) = map (drop 1 . dropEnd 1) . drop 1 . dropEnd 1 $ tile
+    removeTileRowBorder tiles = foldr (\ next acc -> zipWith (<>) (removeTileBorder next) acc) (replicate (maybe 0 (length . tileData) $ headMay tiles) []) tiles
+    removeTileBorder = map (drop 1 . dropEnd 1) . drop 1 . dropEnd 1 . tileData
 
 seaMonsterHeight, seaMonsterWidth, numSeaMonsterChars :: Int
 seaMonsterHeight = 3
@@ -165,10 +148,7 @@ seaMonster = mconcat
 
 overlaysSeaMonster :: [[Char]] -> (Int, Int) -> Bool
 overlaysSeaMonster under (x, y) =
-  let sliceUnder = concatMap (take seaMonsterWidth . drop y) . take seaMonsterHeight . drop x $ under
-      zipped = zip sliceUnder seaMonster
-      isSeaMonsterChar charUnder charMonster = if charMonster == ' ' then True else charMonster == charUnder
-  in length zipped == seaMonsterHeight * seaMonsterWidth && all (uncurry isSeaMonsterChar) zipped
+  all (\ (i, j) -> if i == ' ' then True else i == j) . zip seaMonster . concatMap (take seaMonsterWidth . drop y) . take seaMonsterHeight . drop x $ under
 
 main :: IO ()
 main = do
@@ -177,7 +157,7 @@ main = do
   image <- removeImageBorders <$> iterateImage topLeft remaining
   let imageLen = length image - 1
       numPoundChars = length . filter ((==) '#') . mconcat $ image
-      coords = [ (x, y) | x <- [0..imageLen], y <- [0..imageLen] ]
+      coords = [ (x, y) | x <- [0..(imageLen - seaMonsterHeight)], y <- [0..(imageLen - seaMonsterWidth)] ]
   for_ (getChoices image) $ \ choice -> do
     let numChars = (*) numSeaMonsterChars . length . filter (overlaysSeaMonster choice) $ coords
     if numChars == 0 then pure () else putStrLn $ tshow $ numPoundChars - numChars
