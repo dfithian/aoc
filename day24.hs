@@ -63,9 +63,10 @@ iterateDay :: Map (Int, Int) Color -> Map (Int, Int) Color
 iterateDay m = foldr f mempty (unions . map neighborCoords . keys $ m)
   where
     f next acc =
-      let color = case fromMaybe White . lookup next $ m of
-            White -> if numBlackNeighbors m next == 2 then Black else White
-            Black -> let n = numBlackNeighbors m next in if n == 0 || n > 2 then White else Black
+      let n = numBlackNeighbors m next
+          color = case fromMaybe White . lookup next $ m of
+            White -> if n == 2 then Black else White
+            Black -> if n == 0 || n > 2 then White else Black
       in insertMap next color acc
 
 main :: IO ()
