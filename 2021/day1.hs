@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts script
+-- stack --resolver lts-19 script
 
 {-# LANGUAGE ScopedTypeVariables #-}
 
