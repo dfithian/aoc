@@ -17,7 +17,9 @@ where
     let mut acc = init;
     for line in input_reader.lines() {
         let line = line.unwrap();
-        acc = f(acc, line);
+        if !line.is_empty() {
+            acc = f(acc, line);
+        }
     }
     acc
 }

@@ -1,15 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::Result;
 
 use aoc_2024::parse_input_file;
 
-fn main() -> Result<()> {
+fn main() {
     let (mut xs, mut ys) = parse_input_file((vec![], vec![]), |(mut xs, mut ys), next| {
-        if !next.is_empty() {
-            let mut parts = next.split("   ");
-            xs.push(parts.next().unwrap().parse::<u32>().unwrap());
-            ys.push(parts.next().unwrap().parse::<u32>().unwrap());
-        }
+        let mut parts = next.split("   ");
+        xs.push(parts.next().unwrap().parse::<u32>().unwrap());
+        ys.push(parts.next().unwrap().parse::<u32>().unwrap());
         (xs, ys)
     });
     xs.sort();
@@ -39,6 +36,4 @@ fn main() -> Result<()> {
             acc + score
         });
     println!("part 2: {similar}");
-
-    Ok(())
 }
