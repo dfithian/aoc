@@ -14,4 +14,8 @@ name = "day-01"
 [[bin]]
 name = "day-02"
 
+[[bin]]
+name = "day-03"
+
 [dependencies]
+nom.version = "~7.1"
