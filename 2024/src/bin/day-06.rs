@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use aoc_2024::parse_input_file;
 
@@ -77,10 +77,10 @@ fn main() {
             cur = dir.next(cur);
         }
     }
-    println!("part 1: {}", visits.into_iter().count());
+    println!("part 1: {}", visits.clone().into_iter().count());
 
+    let max_visits = 10001; // if we visit more than the size of the grid, we're in a loop
     let mut dir = Direction::N;
-    let mut visits = BTreeMap::new();
     let mut obstructions = BTreeSet::new();
     let mut cur = pos;
     while in_bounds(cur) {
@@ -90,16 +90,27 @@ fn main() {
             cur = dir.next(prev);
         } else {
             let next = dir.next(cur);
-            let if_i_were_to_turn_here = dir.right();
-            let mut if_i_were_to_walk_straight = if_i_were_to_turn_here.next(cur);
-            while in_bounds(if_i_were_to_walk_straight) && !grid.contains(&if_i_were_to_walk_straight) {
-                if visits.get(&if_i_were_to_walk_straight) == Some(&if_i_were_to_turn_here) {
-                    obstructions.insert(next);
-                    break;
+            if in_bounds(next) && !grid.contains(&next) {
+                let mut lookahead_grid = grid.clone();
+                lookahead_grid.insert(next);
+                let mut lookahead_dir = dir.right();
+                let mut lookahead_cur = lookahead_dir.next(cur);
+                let mut lookahead_visits = 0;
+                while in_bounds(lookahead_cur) {
+                    if lookahead_grid.contains(&lookahead_cur) {
+                        let prev = lookahead_dir.prev(lookahead_cur);
+                        lookahead_dir = lookahead_dir.right();
+                        lookahead_cur = lookahead_dir.next(prev);
+                    } else {
+                        if lookahead_visits > max_visits {
+                            obstructions.insert(next);
+                            break;
+                        }
+                        lookahead_visits += 1;
+                        lookahead_cur = lookahead_dir.next(lookahead_cur);
+                    }
                 }
-                if_i_were_to_walk_straight = if_i_were_to_turn_here.next(if_i_were_to_walk_straight);
             }
-            visits.insert(cur, dir.clone());
             cur = next;
         }
     }
