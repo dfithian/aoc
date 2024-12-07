@@ -26,6 +26,9 @@ name = "day-05"
 [[bin]]
 name = "day-06"
 
+[[bin]]
+name = "day-07"
+
 [dependencies]
 nom.version = "~7.1"
 strum = { version = "~0.26", features = ["derive"] }
