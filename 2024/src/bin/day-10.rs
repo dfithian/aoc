@@ -37,7 +37,7 @@ fn main() {
             )
         });
 
-    let mut stack = topo_map
+    let mut queue = topo_map
         .clone()
         .into_iter()
         .filter_map(|(loc, n)| {
@@ -54,7 +54,7 @@ fn main() {
 
     let mut trails = BTreeMap::new();
     let mut ratings = 0;
-    while let Some(Trail { start, cur }) = stack.pop_back() {
+    while let Some(Trail { start, cur }) = queue.pop_back() {
         let n = cur.1;
         if n == 9 {
             ratings += 1;
@@ -68,7 +68,7 @@ fn main() {
             for new_pos in cur.0.adjacents() {
                 if let Some(new_n) = topo_map.get(&new_pos) {
                     if *new_n == n + 1 {
-                        stack.push_front(Trail {
+                        queue.push_front(Trail {
                             start: start.clone(),
                             cur: (new_pos, *new_n),
                         });
