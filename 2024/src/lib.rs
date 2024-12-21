@@ -3,9 +3,10 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-pub fn parse_input_file<A, F>(init: A, f: F) -> A
+/// Parse an input file including empty lines.
+pub fn parse_input_file_raw<A, F>(init: A, mut f: F) -> A
 where
-    F: Fn(A, String) -> A,
+    F: FnMut(A, String) -> A,
 {
     let mut args = args_os();
     let _ = args.next();
@@ -13,43 +14,50 @@ where
         .next()
         .map(|s| PathBuf::from(s.as_os_str()))
         .expect("input path not given as argument");
-    let input_reader = BufReader::new(File::open(input_path).expect("input_path is invalid"));
+    let input_reader = BufReader::new(File::open(input_path).expect("input path is invalid"));
     let mut acc = init;
+
     for line in input_reader.lines() {
         let line = line.unwrap();
-        if !line.is_empty() {
-            acc = f(acc, line);
-        }
+        acc = f(acc, line);
     }
     acc
 }
 
-pub fn parse_input_file_split<A, F, G>(init: A, f: F, g: G) -> A
+/// Parse an input file ignoring empty lines.
+pub fn parse_input_file<A, F>(init: A, mut f: F) -> A
 where
-    F: Fn(A, String) -> A,
-    G: Fn(A, String) -> A,
+    F: FnMut(A, String) -> A,
 {
-    let mut args = args_os();
-    let _ = args.next();
-    let input_path = args
-        .next()
-        .map(|s| PathBuf::from(s.as_os_str()))
-        .expect("input path not given as argument");
-    let input_reader = BufReader::new(File::open(input_path).expect("input_path is invalid"));
-    let mut acc = init;
+    parse_input_file_raw(
+        init,
+        |acc, line| {
+            if !line.is_empty() {
+                f(acc, line)
+            } else {
+                acc
+            }
+        },
+    )
+}
 
+/// Parse an input file assuming one empty line in the middle of the file.
+pub fn parse_input_file_split<A, F, G>(init: A, mut f: F, mut g: G) -> A
+where
+    F: FnMut(A, String) -> A,
+    G: FnMut(A, String) -> A,
+{
     let mut has_split = false;
-    for line in input_reader.lines() {
-        let line = line.unwrap();
+    parse_input_file_raw(init, |acc, line| {
         if !line.is_empty() {
             if !has_split {
-                acc = f(acc, line);
+                f(acc, line)
             } else {
-                acc = g(acc, line);
+                g(acc, line)
             }
         } else {
             has_split = true;
+            acc
         }
-    }
-    acc
+    })
 }
