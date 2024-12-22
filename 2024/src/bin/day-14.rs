@@ -13,6 +13,22 @@ impl Robot {
     }
 }
 
+fn visualize(bounds: (i64, i64), robots: &Vec<Robot>) -> String {
+    let mut s = format!("");
+    for row in 0..bounds.0 {
+        for col in 0..bounds.1 {
+            let c = robots.iter().filter(|r| r.position == (row, col)).count();
+            if c == 0 {
+                s = format!("{s}.");
+            } else {
+                s = format!("{s}{c}");
+            }
+        }
+        s = format!("{s}\n");
+    }
+    s
+}
+
 fn main() {
     let mut robots = parse_input_file(vec![], |mut acc, line| {
         let mut input = line.split(" ");
@@ -42,7 +58,7 @@ fn main() {
     });
 
     // let bounds = (11, 7);
-    let bounds = (103, 101);
+    let bounds = (101, 103);
     let mid_x = bounds.0 / 2;
     let mid_y = bounds.1 / 2;
 
@@ -73,4 +89,15 @@ fn main() {
     });
     let part_1 = x * y * z * w;
     println!("Part 1: {part_1}");
+
+    loop {
+        let mut i = 0;
+        while i < robots.len() {
+            robots[i].next(bounds);
+            i += 1;
+        }
+        println!("{}", visualize(bounds, &robots));
+        println!("{n}");
+        n += 1;
+    }
 }
