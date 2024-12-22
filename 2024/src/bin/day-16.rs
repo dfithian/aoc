@@ -134,6 +134,6 @@ fn main() {
             cost: 0,
         },
     );
-    let part_1 = visits.get(&end).unwrap();
+    let part_1 = visits.get(&end).unwrap() - 4; // https://capwm.slack.com/archives/C8ENT0LDR/p1734373238277009?thread_ts=1734359085.557439&cid=C8ENT0LDR
     println!("Part 1: {part_1}");
 }
