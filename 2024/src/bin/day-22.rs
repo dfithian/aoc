@@ -36,4 +36,51 @@ fn main() {
     }
     let part_1 = secrets.iter().sum::<u64>();
     println!("Part 1: {part_1}");
+
+    let mut sequences = vec![];
+    for i in 0..secrets.len() {
+        println!("setting history for {i}");
+        sequences.push(vec![]);
+        let mut seq = VecDeque::new();
+        for j in 0..changes[i].len() {
+            seq.push_back(changes[i][j].0);
+            if seq.len() > 4 {
+                seq.pop_front();
+            }
+            if seq.len() == 4 {
+                sequences[i].push((seq.clone(), changes[i][j].1));
+            }
+        }
+    }
+
+    let mut max_price_sum = 0;
+    let mut max_price_seq = vec![];
+    for seq in sequences.iter().fold(BTreeSet::new(), |acc_1, sequences_| {
+        sequences_.iter().fold(acc_1, |mut acc, next| {
+            acc.insert(next.0.clone());
+            acc
+        })
+    }) {
+        println!("checking seq {:?}", seq);
+        let price_sum = sequences
+            .iter()
+            .map(|sequence_| {
+                sequence_.iter().find_map(
+                    |(seq_, price)| {
+                        if seq_ == &seq {
+                            Some(price)
+                        } else {
+                            None
+                        }
+                    },
+                )
+            })
+            .map(|p| p.unwrap_or(&0))
+            .sum::<u64>();
+        if price_sum > max_price_sum {
+            max_price_sum = price_sum;
+            max_price_seq = seq.into();
+        }
+    }
+    println!("Part 2: {:?} {:?}", max_price_sum, max_price_seq);
 }
