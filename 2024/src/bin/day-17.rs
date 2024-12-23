@@ -56,7 +56,7 @@ impl Input {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Register {
     a: i64,
     b: i64,
@@ -66,10 +66,7 @@ struct Register {
 impl Register {
     fn combo(&self, op: i64) -> i64 {
         match op {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 3,
+            0 | 1 | 2 | 3 => op,
             4 => self.a,
             5 => self.b,
             6 => self.c,
@@ -77,47 +74,29 @@ impl Register {
         }
     }
 
-    fn run(&mut self, commands: Vec<i64>) -> Vec<i64> {
+    fn run(&mut self, commands: &Vec<i64>) -> Vec<i64> {
         let mut out = vec![];
         let mut i = 0;
         while i < commands.len() {
+            let mut jump = false;
             match commands[i] {
-                0 => {
-                    self.a = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32);
-                    i += 2;
-                }
-                1 => {
-                    self.b = self.b.bitxor(commands[i + 1]);
-                    i += 2;
-                }
-                2 => {
-                    self.b = self.combo(commands[i + 1]) % 8;
-                    i += 2;
-                }
+                0 => self.a = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32),
+                1 => self.b = self.b.bitxor(commands[i + 1]),
+                2 => self.b = self.combo(commands[i + 1]) % 8,
                 3 => {
                     if self.a != 0 {
+                        jump = true;
                         i = commands[i + 1] as usize;
-                    } else {
-                        i += 2;
                     }
                 }
-                4 => {
-                    self.b = self.b.bitxor(self.c);
-                    i += 2;
-                }
-                5 => {
-                    out.push(self.combo(commands[i + 1]) % 8);
-                    i += 2;
-                }
-                6 => {
-                    self.b = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32);
-                    i += 2;
-                }
-                7 => {
-                    self.c = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32);
-                    i += 2;
-                }
+                4 => self.b = self.b.bitxor(self.c),
+                5 => out.push(self.combo(commands[i + 1]) % 8),
+                6 => self.b = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32),
+                7 => self.c = self.a / 2_i64.pow(self.combo(commands[i + 1]) as u32),
                 _ => panic!("oh no"),
+            }
+            if !jump {
+                i += 2;
             }
         }
         out
@@ -131,7 +110,7 @@ struct Program {
 
 fn main() {
     let mut input = Input::A;
-    let mut program = parse_input_file_raw(
+    let Program { register, commands } = parse_input_file_raw(
         Program {
             register: Register { a: 0, b: 0, c: 0 },
             commands: vec![],
@@ -141,11 +120,24 @@ fn main() {
             acc
         },
     );
-    let out = program.register.run(program.commands);
+
+    let mut part_1_reg = register.clone();
+    let out = part_1_reg.run(&commands);
     let part_1 = out
         .into_iter()
         .map(|n| format!("{n}"))
         .collect::<Vec<_>>()
         .join(",");
     println!("Part 1: {part_1}");
+
+    let mut a = register.a;
+    let mut out = vec![];
+    while &out != &commands {
+        a += 1;
+        println!("{a}");
+        let mut part_2_reg = register.clone();
+        part_2_reg.a = a;
+        out = part_2_reg.run(&commands);
+    }
+    println!("Part 2: {a}");
 }
