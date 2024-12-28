@@ -1,118 +1,76 @@
-use std::collections::BTreeMap;
-
 use aoc_2024::parse_input_file_raw;
 
 #[derive(Clone)]
 struct Machine {
-    a: (u64, u64),
-    b: (u64, u64),
-    prize: (u64, u64),
+    a: (i64, i64),
+    b: (i64, i64),
+    prize: (i64, i64),
+}
+
+fn parse_button(name: &str, line: String) -> (i64, i64) {
+    let mut xy = line
+        .strip_prefix(&format!("Button {name}: "))
+        .map(|x| x.split(", ").collect::<Vec<_>>())
+        .unwrap_or(vec![])
+        .into_iter();
+    let x = xy
+        .next()
+        .and_then(|x| x.strip_prefix("X+"))
+        .and_then(|x| x.parse::<i64>().ok())
+        .unwrap();
+    let y = xy
+        .next()
+        .and_then(|y| y.strip_prefix("Y+"))
+        .and_then(|y| y.parse::<i64>().ok())
+        .unwrap();
+    (x, y)
+}
+
+fn parse_prize(line: String) -> (i64, i64) {
+    let mut xy = line
+        .strip_prefix("Prize: ")
+        .map(|x| x.split(", ").collect::<Vec<_>>())
+        .unwrap_or(vec![])
+        .into_iter();
+    let x = xy
+        .next()
+        .and_then(|x| x.strip_prefix("X="))
+        .and_then(|x| x.parse::<i64>().ok())
+        .unwrap();
+    let y = xy
+        .next()
+        .and_then(|y| y.strip_prefix("Y="))
+        .and_then(|y| y.parse::<i64>().ok())
+        .unwrap();
+    (x, y)
 }
 
 fn parse_machine(lines: Vec<String>) -> Machine {
     let mut lines = lines.iter();
-    let mut axy = lines
-        .next()
-        .unwrap()
-        .strip_prefix("Button A: ")
-        .unwrap()
-        .split(", ")
-        .collect::<Vec<_>>()
-        .into_iter();
-    let ax = axy
-        .next()
-        .unwrap()
-        .strip_prefix("X+")
-        .unwrap()
-        .parse()
-        .unwrap();
-    let ay = axy
-        .next()
-        .unwrap()
-        .strip_prefix("Y+")
-        .unwrap()
-        .parse()
-        .unwrap();
-    let mut bxy = lines
-        .next()
-        .unwrap()
-        .strip_prefix("Button B: ")
-        .unwrap()
-        .split(", ")
-        .collect::<Vec<_>>()
-        .into_iter();
-    let bx = bxy
-        .next()
-        .unwrap()
-        .strip_prefix("X+")
-        .unwrap()
-        .parse()
-        .unwrap();
-    let by = bxy
-        .next()
-        .unwrap()
-        .strip_prefix("Y+")
-        .unwrap()
-        .parse()
-        .unwrap();
-    let mut prizexy = lines
-        .next()
-        .unwrap()
-        .strip_prefix("Prize: ")
-        .unwrap()
-        .split(", ")
-        .collect::<Vec<_>>()
-        .into_iter();
-    let prizex = prizexy
-        .next()
-        .unwrap()
-        .strip_prefix("X=")
-        .unwrap()
-        .parse()
-        .unwrap();
-    let prizey = prizexy
-        .next()
-        .unwrap()
-        .strip_prefix("Y=")
-        .unwrap()
-        .parse()
-        .unwrap();
-    Machine {
-        a: (ax, ay),
-        b: (bx, by),
-        prize: (prizex, prizey),
-    }
+    let a = parse_button("A", lines.next().unwrap().to_string());
+    let b = parse_button("B", lines.next().unwrap().to_string());
+    let prize = parse_prize(lines.next().unwrap().to_string());
+    Machine { a, b, prize }
 }
 
-fn play_game(
-    mut visited: BTreeMap<(u64, u64), u64>,
-    cost: u64,
-    machine: &Machine,
-    (x, y): (u64, u64),
-) -> BTreeMap<(u64, u64), u64> {
-    if let Some(old) = visited.get(&(x, y)) {
-        if *old <= cost {
-            return visited;
-        }
+/// x*a1 + y*a2 = A
+/// x = (A - y*a2)/a1
+///
+/// x*b1 + y*b2 = B
+/// (A - y*a2)*b1/a1 + y*b2 = B
+/// y = (a1*B - A*b1)/(a1*b2 - a2*b1)
+fn solve(Machine { a, b, prize }: &Machine) -> i64 {
+    // let y = (a.0 * prize.1 - prize.0 * b.0) / (a.0 * b.1 - a.1 * b.0);
+    // let x = (prize.0 - y * a.1) / a.0;
+    if (a.0 * prize.1 - prize.0 * a.1) % (a.0 * b.1 - b.0 * a.1) != 0 {
+        return 0;
     }
-    visited.insert((x, y), cost);
-    if x >= machine.prize.0 || y >= machine.prize.1 {
-        visited
-    } else {
-        let visited = play_game(
-            visited,
-            cost + 3,
-            machine,
-            (x + machine.a.0, y + machine.a.1),
-        );
-        let visited = play_game(
-            visited,
-            cost + 1,
-            machine,
-            (x + machine.b.0, y + machine.b.1),
-        );
-        visited
+    let y = (a.0 * prize.1 - prize.0 * a.1) / (a.0 * b.1 - b.0 * a.1);
+    if (prize.0 - y * b.0) % a.0 != 0 {
+        return 0;
     }
+    let x = (prize.0 - y * b.0) / a.0;
+    3 * x + y
 }
 
 fn main() {
@@ -129,16 +87,16 @@ fn main() {
     });
     machines.push(parse_machine(machine_lines));
 
-    let part_1 = machines
-        .clone()
-        .into_iter()
-        .filter_map(|machine| {
-            let tokens = play_game(BTreeMap::new(), 0, &machine, (0, 0))
-                .get(&machine.prize)
-                .cloned();
-            // println!("{:?} => {:?}", machine.prize, tokens);
-            tokens
-        })
-        .sum::<u64>();
+    let part_1 = machines.iter().map(solve).sum::<i64>();
     println!("Part 1: {part_1}");
+
+    let part_2 = machines
+        .into_iter()
+        .map(|mut m| {
+            m.prize.0 += 10000000000000;
+            m.prize.1 += 10000000000000;
+            solve(&m)
+        })
+        .sum::<i64>();
+    println!("Part 2: {part_2}");
 }
