@@ -2,39 +2,25 @@ use std::collections::BTreeSet;
 
 use aoc_2025::parse_input_file;
 
-fn adjacency_sum(
-    row: usize,
-    col: usize,
-    max_row: usize,
-    max_col: usize,
-    grid: &Vec<Vec<u32>>,
-) -> u32 {
-    let mut n = 0_u32;
-    if row != 0 {
-        if col != 0 {
-            n += grid[row - 1][col - 1];
+fn adjacency_sum(row: i32, col: i32, max_row: i32, max_col: i32, grid: &Vec<Vec<u32>>) -> u32 {
+    vec![
+        (row - 1, col - 1),
+        (row - 1, col),
+        (row - 1, col + 1),
+        (row, col - 1),
+        (row, col + 1),
+        (row + 1, col - 1),
+        (row + 1, col),
+        (row + 1, col + 1),
+    ]
+    .into_iter()
+    .fold(0_u32, |n, (i, j)| {
+        if 0 <= i && i < max_row && 0 <= j && j < max_col {
+            n + grid[i as usize][j as usize]
+        } else {
+            n
         }
-        n += grid[row - 1][col];
-        if col != max_col - 1 {
-            n += grid[row - 1][col + 1];
-        }
-    }
-    if col != 0 {
-        n += grid[row][col - 1];
-    }
-    if col != max_col - 1 {
-        n += grid[row][col + 1];
-    }
-    if row != max_row - 1 {
-        if col != 0 {
-            n += grid[row + 1][col - 1];
-        }
-        n += grid[row + 1][col];
-        if col != max_col - 1 {
-            n += grid[row + 1][col + 1];
-        }
-    }
-    n
+    })
 }
 
 fn main() {
@@ -50,34 +36,36 @@ fn main() {
         acc
     });
 
-    let max_row = grid.len();
-    let max_col = grid[0].len();
+    let max_row = grid.len() as i32;
+    let max_col = grid[0].len() as i32;
 
-    let mut seen = BTreeSet::<(usize, usize)>::new();
+    let mut seen = BTreeSet::<(i32, i32)>::new();
     for row in 0..max_row {
         for col in 0..max_col {
-            let n = adjacency_sum(row, col, max_row, max_col, &grid);
-            if n < 4 && grid[row][col] == 1 {
-                seen.insert((row, col));
+            if grid[row as usize][col as usize] == 1 {
+                if adjacency_sum(row, col, max_row, max_col, &grid) < 4 {
+                    seen.insert((row, col));
+                }
             }
         }
     }
     let count = seen.len();
     println!("part 1: {count}");
 
-    let mut seen = BTreeSet::<(usize, usize)>::new();
+    let mut seen = BTreeSet::<(i32, i32)>::new();
     let mut changed = true;
     while changed {
         changed = false;
         for row in 0..max_row {
             for col in 0..max_col {
-                let n = adjacency_sum(row, col, max_row, max_col, &grid);
-                if n < 4 && grid[row][col] == 1 {
-                    if !seen.contains(&(row, col)) {
-                        changed = true;
+                if grid[row as usize][col as usize] == 1 {
+                    if adjacency_sum(row, col, max_row, max_col, &grid) < 4 {
+                        if !seen.contains(&(row, col)) {
+                            changed = true;
+                            grid[row as usize][col as usize] = 0;
+                            seen.insert((row, col));
+                        }
                     }
-                    grid[row][col] = 0;
-                    seen.insert((row, col));
                 }
             }
         }
