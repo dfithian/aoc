@@ -31,11 +31,16 @@ fn print_cover(
 }
 
 fn overlaps(from: u64, to: u64, lo: u64, hi: u64) -> bool {
-    (lo <= from && from <= hi) || (lo <= to && to <= hi) || hi == from - 1 || to + 1 == lo
+    (from <= lo && hi <= to)
+        || (lo <= from && to <= hi)
+        || (lo <= from && from <= hi)
+        || (lo <= to && to <= hi)
+        || hi == from - 1
+        || to + 1 == lo
 }
 
 fn main() {
-    let (mut ranges, available) = parse_input_file_split(
+    let (ranges, available) = parse_input_file_split(
         (vec![], vec![]),
         |(mut acc_ranges, acc_available), next| {
             let mut range = next.split("-");
@@ -55,8 +60,7 @@ fn main() {
     println!("part 1: {total}");
 
     let mut cover = VecDeque::<(u64, u64)>::new();
-    ranges.sort();
-    for (mut from, mut to) in ranges.into_iter() {
+    for (mut from, mut to) in ranges.iter() {
         let mut drained: Option<Vec<(u64, u64)>> = None;
         let mut i = 0;
         while i < cover.len() {
@@ -85,6 +89,6 @@ fn main() {
         print_cover(Some((from, to, i)), &drained, &cover);
     }
     print_cover(None, &None, &cover);
-    let total = cover.into_iter().map(|(from, to)| to - from + 1).sum::<u64>();
+    let total = cover.iter().map(|(from, to)| to - from + 1).sum::<u64>();
     println!("part 2: {total}");
 }
