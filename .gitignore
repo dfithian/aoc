@@ -2,3 +2,4 @@ dist-newstyle/
 .stack/
 target/
 */input/*/input.txt
+*.log
