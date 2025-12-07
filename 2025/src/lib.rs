@@ -24,6 +24,13 @@ where
     acc
 }
 
+pub fn parse_input_file_char_grid() -> Vec<Vec<char>> {
+    parse_input_file(vec![], |mut grid, next| {
+        grid.push(next.chars().collect::<Vec<char>>());
+        grid
+    })
+}
+
 /// Parse an input file ignoring empty lines.
 pub fn parse_input_file<A, F>(init: A, mut f: F) -> A
 where

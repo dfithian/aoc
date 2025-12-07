@@ -2,7 +2,7 @@
 set -e
 cd "$(dirname "$0")"
 today=$(date +%d)
-lastday=$(find ../src/bin -depth 1 -type f -name "*.rs" | grep -v "day-$today" | tail -n 1 | xargs basename | cut -d '.' -f 1 | cut -d '-' -f 2)
+lastday=$(find ../src/bin -depth 1 -type f -name "*.rs" | grep -v "day-$today" | sort | tail -n 1 | xargs basename | cut -d '.' -f 1 | cut -d '-' -f 2)
 mkdir -p "../input/day-$today"
 touch "../input/day-$today/example.txt"
 touch "../input/day-$today/input.txt"
