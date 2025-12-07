@@ -9,8 +9,8 @@ fn main() {
         for col in 0..grid[0].len() {
             match grid[row][col] {
                 'S' => tree[row][col] = true,
-                '.' => if row > 0 && tree[row - 1][col] {
-                    tree[row][col] = true;
+                '.' => if row > 0 {
+                    tree[row][col] = tree[row][col] || tree[row - 1][col];
                 },
                 '^' => if tree[row - 1][col] {
                     splits += 1;
@@ -35,7 +35,7 @@ fn main() {
                 '.' => if row > 0 {
                     tree[row][col] += tree[row - 1][col];
                 },
-                '^' => if tree[row - 1][col] > 0 {
+                '^' => {
                     if col > 0 {
                         tree[row][col - 1] += tree[row - 1][col];
                     }
