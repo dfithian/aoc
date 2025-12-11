@@ -13,7 +13,7 @@ fn matches_1(cur: &[bool], desired: &[bool]) -> bool {
 }
 
 enum Match2 {
-    NotValid,
+    NotYetValid,
     Valid,
     NeverAgainValid,
 }
@@ -29,11 +29,12 @@ fn matches_2(cur: &[u32], desired: &[u32]) -> Match2 {
         }
     }
     if invalid {
-        return Match2::NotValid;
+        return Match2::NotYetValid;
     }
     return Match2::Valid;
 }
 
+#[derive(Clone)]
 struct Machine {
     desired: Vec<bool>,
     toggles: Vec<Vec<usize>>,
@@ -51,13 +52,12 @@ impl Machine {
             if matches_1(&cur, &self.desired) {
                 min = min.min(n);
                 possibilities = possibilities.into_iter().filter(|(m, _, _)| *m < min).collect::<VecDeque<(u32, Vec<bool>, Vec<usize>)>>();
-            } else {
+            } else if n < min {
                 for toggle in self.toggles.clone().into_iter() {
                     possibilities.push_back((n + 1, cur.clone(), toggle));
                 }
             }
         }
-        println!("index {:02} min {min} for {:?}", i, self.desired);
         return min;
     }
 
@@ -69,8 +69,10 @@ impl Machine {
                 cur[*i] += 1;
             }
             match matches_2(&cur, &self.joltage) {
-                Match2::NotValid => for toggle in self.toggles.clone().into_iter() {
-                    possibilities.push_back((n + 1, cur.clone(), toggle));
+                Match2::NotYetValid => if n < min {
+                    for toggle in self.toggles.clone().into_iter() {
+                        possibilities.push_back((n + 1, cur.clone(), toggle));
+                    }
                 },
                 Match2::Valid => {
                     min = min.min(n);
@@ -79,7 +81,6 @@ impl Machine {
                 Match2::NeverAgainValid => (),
             }
         }
-        println!("index {:02} min {min} for {:?}", i, self.joltage);
         return min;
     }
 }
@@ -113,9 +114,9 @@ fn main() {
         acc
     });
 
-    // let part1 = machines.clone().into_iter().enumerate().map(|(i, m)| m.run_1(i)).sum::<u32>();
-    // println!("part 1: {part1}");
+    let part1 = machines.clone().into_iter().enumerate().map(|(i, m)| m.run_1(i)).sum::<u32>();
+    println!("part 1: {part1}");
 
-    let part2 = machines.into_iter().enumerate().map(|(i, m)| m.run_2(i)).sum::<u32>();
-    println!("part 2: {part2}");
+    // let part2 = machines.into_iter().enumerate().map(|(i, m)| m.run_2(i)).sum::<u32>();
+    // println!("part 2: {part2}");
 }
