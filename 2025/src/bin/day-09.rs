@@ -22,11 +22,10 @@ fn main() {
             rest.drain(0..=i);
             rest.into_iter().map(move |p2| (p1, p2))
         })
-        .collect::<Vec<((u64, u64), (u64, u64))>>();
-    coordinates_by_area.sort_by_key(|(p1, p2)| area(*p1, *p2));
-    coordinates_by_area.reverse();
+        .map(|(p1, p2)| area(p1, p2))
+        .collect::<Vec<u64>>();
+    coordinates_by_area.sort();
 
-    let (p1, p2) = coordinates_by_area[0];
-    let part1 = area(p1, p2);
+    let part1 = coordinates_by_area[coordinates_by_area.len() - 1];
     println!("part 1: {part1}");
 }
